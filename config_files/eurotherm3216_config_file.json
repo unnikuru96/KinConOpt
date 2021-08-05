@@ -1,0 +1,10 @@
+{
+	"port" : "COM4",
+	"address" : 1,
+	"baudrate" : 9600,
+	"timeout" : 1
+	"test_register" : ,
+	"test_value" : 
+}
+	
+	

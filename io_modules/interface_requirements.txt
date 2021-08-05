@@ -1,0 +1,18 @@
+This document outlines the minimum interface requirements for any new temperature or flow control modules. 
+
+class Instrument():
+	
+	init(config_file.json) --> No return
+		Initializes communication with device, checks for valid communications. 
+		Throws:
+			- IOError if communication fails.
+			- FileNotFoundError if file is unopenable.
+		Input: config_file.json, which is a string for a JSON file
+	write_sp(new_sp) --> Bool
+		Reads a setpoint from the device.
+		Returns True if setpoint was set successfully [requires you to verify setpoint took]
+		Input: new_sp, which is a float
+	read_pv() --> float
+		Reads the current PV from the device
+
+
