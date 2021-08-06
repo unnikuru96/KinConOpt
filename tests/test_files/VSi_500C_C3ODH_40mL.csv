@@ -1,0 +1,8 @@
+ ,WARNING: CSV format is subject to change without notice.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ ,Software programs should use JSON format for completeness and forward-compatibility.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+WPM_C3ODH_081020,SampleName,Area, , , , , , , , , , , , , , , , ,RT(s), , , , , , , , , , , , , , , , 
+Detectors,,moduleA:tcd, , , ,moduleB:tcd,moduleC:tcd, , , , , , , , , , ,moduleD:tcd,moduleA:tcd, , , ,moduleB:tcd,moduleC:tcd, , , , , , , , , , ,moduleD:tcd
+Time (GMT -300 mins),,oxygen,nitrogen,methane,carbon monoxide,carbon dioxide,ethane,ethylene,propane,propylene,isobutane,n-butane,trans-2-butene,1-butene,isobutene,cis-2-butene,"1,3-butadiene",(uncalibrated),oxygen,nitrogen,methane,carbon monoxide,carbon dioxide,ethane,ethylene,propane,propylene,isobutane,n-butane,trans-2-butene,1-butene,isobutene,cis-2-butene,"1,3-butadiene",(uncalibrated)
+7/6/2021 2:08,VSiO2_c3odh_460-500C,33426.25,2399079.725,2442.265,312649.39,145285.17,125.185,4109.87,1107641.675,97058.435,361.63,276.995,0,98.26,0,0,0,0,36.58,41.35,54.07,73.07,31.37,37.1,41.08,47.35,70.33,83.06,87.88,116.71,118.87,124.25,127.65,148.75,0
+% RSD, ,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

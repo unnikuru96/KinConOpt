@@ -1,0 +1,47 @@
+{
+	"IP Address" : "169.254.78.243",
+	"Cal File Loc" : "C:\\Users\\Hermans_Desktop1\\UK_OneDrive\\OneDrive - UW-Madison\\Documents\\Research\\Scripts\\KinConOpt\\cal_files\\inficon_gc_cal_propane.csv",
+	"Reactants" : ["oxygen","nitrogen","propylene"],
+	"Major Reactant" : "propylene",
+	"Diluent" : "nitrogen",
+	"Products": ["methane","carbon monoxide","carbon dioxide","ethane","ethylene"],
+	"Carbon Number" : {
+						"methane" : 1,
+						"carbon monoxide" : 1,
+						"carbon dioxide" : 1,
+						"ethane" : 2,
+						"ethylene" : 2,
+						"propylene" : 3,
+						"isobutane" : 4,
+						"n-butane" : 4,
+						"trans-2-butene" : 4,
+						"1-butene" : 4,
+						"isobutene" : 4,
+						"cis-2-butene" : 4,
+						"1,3-butadiene" : 4
+					},
+	"Selectivity" : {
+						"CO" : ["carbon monoxide"],
+						"CO2" : ["carbon dioxide"],
+						"COx" : ["carbon monoxide", "carbon dioxide"], 
+						"C2H4" : ["ethylene"]
+					},
+	"Conversion" : ["propylene","oxygen"],
+	"Instantaneous Rate" : {
+						"CO" : ["carbon monoxide"],
+						"CO2" : ["carbon dioxide"],
+						"COx" : ["carbon monoxide", "carbon dioxide"], 
+						"C2H4" : ["ethylene"]
+					},
+	"Molecular Weight" : {
+							"carbon dioxide" : 44.01,
+							"carbon monoxide" : 28.01,
+							"propane" : 44.1,
+							"propylene" : 42.08,
+							"ethylene" : 28.05
+					},
+	"Catalyst Mass" : 50.1,
+	"Bed Volume" : 0.25
+}
+
+

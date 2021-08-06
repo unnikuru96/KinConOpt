@@ -1,0 +1,8 @@
+ ,WARNING: CSV format is subject to change without notice.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ ,Software programs should use JSON format for completeness and forward-compatibility.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+WPM_C3ODH_081020,SampleName,Area, , , , , , , , , , , , , , , , ,RT(s), , , , , , , , , , , , , , , , 
+Detectors,,moduleA:tcd, , , ,moduleB:tcd,moduleC:tcd, , , , , , , , , , ,moduleD:tcd,moduleA:tcd, , , ,moduleB:tcd,moduleC:tcd, , , , , , , , , , ,moduleD:tcd
+Time (GMT -300 mins),,oxygen,nitrogen,methane,carbon monoxide,carbon dioxide,ethane,ethylene,propane,propylene,isobutane,n-butane,trans-2-butene,1-butene,isobutene,cis-2-butene,"1,3-butadiene",(uncalibrated),oxygen,nitrogen,methane,carbon monoxide,carbon dioxide,ethane,ethylene,propane,propylene,isobutane,n-butane,trans-2-butene,1-butene,isobutene,cis-2-butene,"1,3-butadiene",(uncalibrated)
+8/4/2021 16:34,VTa_15pC3O2bp_40-120mL,538205.215,2536620.275,0,0,0,0,0,1613.07,528190.765,0,171.055,0,0,0,0,0,0,35.92,41.29,54.02,74.3,31.87,37.08,41.06,49.65,67.86,84.56,87.89,116.71,119.65,124.25,127.65,148.75,0
+% RSD, ,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
