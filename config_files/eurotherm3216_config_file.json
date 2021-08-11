@@ -2,9 +2,11 @@
 	"port" : "COM4",
 	"address" : 1,
 	"baudrate" : 9600,
-	"timeout" : 1
-	"test_register" : ,
-	"test_value" : 
+	"timeout" : 1,
+	"PV Register" : 32770,
+	"SP Register" : 2,
+	"Test Register" : 280,
+	"test_value" : 0
 }
 	
 	

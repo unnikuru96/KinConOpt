@@ -23,8 +23,8 @@ class Instrument():
 				raise ValueError("Test register value did not match expected value from JSON file.")
 
 			#------------- Setting up PV and SP registers ----#
-			self.PV_register = config["PV_register"]
-			self.SP_register = config["SP_register"]
+			self.PV_register = config["PV Register"]
+			self.SP_register = config["SP Register"]
 			
 		except KeyError as e:
 			raise Error("port, address, test_register, test_response, PV register, or SP register is not in JSON file.")
