@@ -15,7 +15,7 @@ This code was primarily adapted from code written by Ethan Young at UW-Madison. 
 class Instrument(self):
 	#This method initializes the Instrument object which encapsulates the Controllers and methods that interact with them
 	def __init__(self,config_file):
-
+		self.name = "bronkhorst_flowbus"
 		self.flow_wait_time = 1/60 #in hours
 		self.flow_dev_lim = 2
 		self.emergency_flows = {}
@@ -58,6 +58,9 @@ class Instrument(self):
 		except:
 			print("Unexpected error: ",sys.exc_info()[0])
 			raise
+
+	def get_sub_dev_names(self):
+		return {bh.name : self.name for bh in self.Controllers}
 
 	def read_pv(self):
 		curr_flows = {}

@@ -4,9 +4,9 @@
 	"baudrate" : 9600,
 	"timeout" : 1,
 	"PV Register" : 32770,
-	"SP Register" : 2,
-	"Test Register" : 280,
-	"test_value" : 0
+	"SP Register" : 32772,
+	"Test Register" : 131,
+	"Test Value" : 1
 }
 	
 	
