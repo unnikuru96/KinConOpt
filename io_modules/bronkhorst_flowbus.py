@@ -1,4 +1,5 @@
 import serial
+import json
 import time
 from datetime import datetime
 import sys
@@ -12,13 +13,14 @@ This code was primarily adapted from code written by Ethan Young at UW-Madison. 
 
 """
 
-class Instrument(self):
+class Instrument():
 	#This method initializes the Instrument object which encapsulates the Controllers and methods that interact with them
 	def __init__(self,config_file):
 		self.name = "bronkhorst_flowbus"
 		self.flow_wait_time = 1/60 #in hours
 		self.flow_dev_lim = 2
 		self.emergency_flows = {}
+		self.Controllers = []
 
 		try:
 			#------------- Configuring Instrument-------------#
@@ -52,7 +54,7 @@ class Instrument(self):
 					self.Controllers.append(bh)		
 			
 		except KeyError as e:
-			raise Error("At least one setting in JSON file not configured properly.")
+			raise KeyError("At least one setting in JSON file not configured properly.\nError Msg: {}".format(e))
 		except FileNotFoundError as e:
 			raise FileNotFoundError("{} not a locatable file".format(config_file))
 		except:
@@ -62,19 +64,22 @@ class Instrument(self):
 	def get_sub_dev_names(self):
 		return {bh.name : self.name for bh in self.Controllers}
 
-	def read_pv(self):
+	def read_PV(self):
 		curr_flows = {}
 		for bh in self.Controllers:
 			curr_flows[bh.name + " PV"] = bh.read_flow()
-			if curr_flows[bh.name] == -99: #read_flow() method returns -99 if there is failure to read flow 10x
-				raise Error("Flow reading failed at the level of the Bronkhorst class. Comms issue.") 
+			if curr_flows[bh.name + " PV"] == -99: #read_flow() method returns -99 if there is failure to read flow 10x
+				raise IOError("Flow reading failed at the level of the Bronkhorst class. Comms issue.") 
 		return curr_flows
 
-	def read_sp(self):
-		
-		return {key[:-3] + " SP" : val for key, val in self.read_pv().items()}
+	def read_SP(self):
+		curr_setpts = {}
+		for bh in self.Controllers:
+			curr_setpts[bh.name + " SP"] = bh.read_setpoint()
 
-	def set_flows(self,flow_dict,emergency=False):
+		return curr_setpts
+
+	def write_SP(self,flow_dict,emergency=False):
 		for bh in self.Controllers:
 			if flow_dict.get(bh.name) is not None: #if controller flow change is dictated in flow_dict
 				bh.set_flow(flow_dict[bh.name])
@@ -90,14 +95,13 @@ class Instrument(self):
 					if ((act_flow < exp_flow_low) or (act_flow > exp_flow_high)):
 						print("Setpoints failed to set. Setting emergency flows.")
 						self.set_flows(self.emergency_flows,emergency=True)
-						raise Error("Emergency flows set due to failure in setting flows")
-
+						raise IOError("Emergency flows set due to failure in setting flows")
 
 class Bronkhorst():
 	""" Driver for Bronkhorst flow controllers """
 	def __init__(self, port, serial, max_flow, node_channel, ID, gas, correction_factor,emergency_flow):
 		self.max_setting = max_flow
-		self.node = node_channel
+		self.node = Node = '{:02x}'.format(int(node_channel))
 		self.ser = serial
 		self.name = ID
 		self.gas = gas
@@ -130,7 +134,6 @@ class Bronkhorst():
 
 	def read_flow(self):
 		""" Read the actual flow """ #If 10 errors then returns -99
-		#print("Port: " + str(self.ser.port))
 		error = 0
 		while error < 10:
 			read_pressure = ':06' + self.node + '0401210120\r\n' # Read pressure

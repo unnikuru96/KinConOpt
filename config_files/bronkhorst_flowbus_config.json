@@ -15,7 +15,7 @@
 			"Emergency Flow" : 0,
 			"Gas" : "OzO2",
 			"Correction Factor" : 1,
-			"Emergency Flow" : 0,
+			"Emergency Flow" : 0
 		},
 		{
 			"Name" : "CH2 O2",
@@ -25,7 +25,7 @@
 			"Emergency Flow" : 0,
 			"Gas" : "O2",
 			"Correction Factor" : 1,
-			"Emergency Flow" : 0,
+			"Emergency Flow" : 0
 		},
 		{
 			"Name" : "N2",
@@ -35,7 +35,7 @@
 			"Emergency Flow" : 40,
 			"Gas" : "N2",
 			"Correction Factor" : 1,
-			"Emergency Flow" : 40,
+			"Emergency Flow" : 40
 		},
 		{
 			"Name" : "iC4H10",
@@ -45,7 +45,7 @@
 			"Emergency Flow" : 0,
 			"Gas" : "Butane",
 			"Correction Factor" : 1,
-			"Emergency Flow" : 0,
+			"Emergency Flow" : 0
 		}
 	]
 }

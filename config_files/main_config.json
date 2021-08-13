@@ -2,9 +2,9 @@
 	"GC Module" : "inficon_gc",
 	"GC Config File" : "../config_files/inficon_gc_config_propane_odh.json",
 	"Flow Module" : "bronkhorst_flowbus",
-	"Flow Config File" : "../config_files/bronkhorst_flowbus_config_file.json",
-	"Temp Module" : "",
-	"Temp Config File" : "../config_files/eurotherm3216_config_file.json",
+	"Flow Config File" : "../config_files/bronkhorst_flowbus_config.json",
+	"Temp Module" : "eurotherm3216",
+	"Temp Config File" : "../config_files/eurotherm3216_config.json",
 	"Condition Log File" : "../output/test_log.csv",
 	"Online Setpt Change File" : "../input/online_setpt_chg.csv",
 	"Log Poll Time" : "60"

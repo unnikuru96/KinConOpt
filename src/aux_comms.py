@@ -59,8 +59,8 @@ class AuxComms():
 		#-----------------------Generating Header--------------------------#
 		self.header = ["Time"]
 		for dev_name,dev in self.aux_devices.items():
-			dev_sp = dev.read_SP()
 			dev_pv = dev.read_PV()
+			dev_sp = dev.read_SP()
 			for sub_dev_name in dev_sp.keys(): #ex. for each flow controller in the Bronkhorst flow controllers:
 				self.header.append(sub_dev_name)
 			for sub_dev_name in dev_pv.keys():
