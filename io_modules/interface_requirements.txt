@@ -25,4 +25,9 @@ class Instrument():
 
 	get_sub_dev_names() --> Dictionary of form {"sub_device_name_1" : "device_name", "sub_device_name_2" : "device_name" } etc.
 
+	GC ONLY
+	prep_data(dataset,path_to_store_data) --> Takes in a dataset from the GC and a path to store data, returns a list of .JSON filenames to iterate over.
+	generate_bypass_areas(bypass) --> return some sort of dictionary with at least this structure: {"compound name1" : {"bypass_area" : 1234}, "compound name2" : {"bypass_area" : 2345},...}
+
+
 

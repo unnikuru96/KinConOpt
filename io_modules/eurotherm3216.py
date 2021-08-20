@@ -8,13 +8,14 @@ import minimalmodbus
 class Instrument():
 	def __init__(self,config_file):
 		try:
-			self.name = "eurotherm T(degC)"
+			
 
 
 			#------------- Configuring Instrument-------------#
 			with open(config_file, 'r') as f:
 				config = json.load(f)
 				self.eurotherm = minimalmodbus.Instrument(config["port"],config["address"])
+				self.name = config["Name"]
 				if "baudrate" in config.keys():
 					self.eurotherm.serial.baudrate = config["baudrate"]
 				if "timeout" in config.keys():

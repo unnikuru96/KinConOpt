@@ -7,5 +7,6 @@
 	"Temp Config File" : "../config_files/eurotherm3216_config.json",
 	"Condition Log File" : "../output/test_log.csv",
 	"Online Setpt Change File" : "../input/online_setpt_chg.csv",
+	"Data Analysis Path" : "../output/",
 	"Log Poll Time" : "60"
 }

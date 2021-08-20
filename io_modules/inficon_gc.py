@@ -1,7 +1,9 @@
 import json
 import sys
 import pandas as pd
-
+import zipfile
+import os
+from datetime import datetime
 
 class Instrument():
 
@@ -74,6 +76,15 @@ class Instrument():
             print("Error retreiving last_run_location from " + last_run_location)
             print(e)
             return ""
+    def get_last_run_ID(self):
+        response = requests.get(self.old_run_location)
+        last_run = response.json()
+        return last_run["$id"]
+
+    def get_last_run_timestamp(self):
+        response = requests.get(self.old_run_location)
+        last_run = response.json()
+        return last_run["runTimeStamp"]
 
     #returns True if ID of latest run is different from last ID stored in program
     def check_for_new_run(self):
@@ -89,6 +100,17 @@ class Instrument():
             last_run = response.json()
             return self.analyze_run_offline(last_run)
 
+    def prep_data(self,dataset,path_to_store_data):
+        """Dataset comes in as a .zip file. This fx extracts this .zip, renames the files with .JSON ending, and returns a list of filenames to iterate through."""
+        with zipfile.ZipFile(dataset,"r") as dataset:
+            dataset.extractall(path=path_to_store_data)
+            flist = []
+            for fname in dataset.namelist(): #replace endings with .json and create our return list
+                old_fname = path_to_store_data+fname
+                new_fname = old_fname[:-12]+".json"
+                os.rename(old_fname,new_fname)
+                flist.append(new_fname)
+            return flist
 
 
     # def add_peak_window(self,run_json):
@@ -104,12 +126,41 @@ class Instrument():
         making sure they're labelled correctly, correcting any unlabelled peaks, and then calculating the 
         concentration of each species based on its calibration."""
     # This method returns two ordered dictionaries, one with the analysis metrics and another with the raw peak data
-    def analyze_run_offline(self,run_json,bypass):
+    
+    def collect_cal_peaks(self):
+        return {i:{"area" : 0,"detector":None} for i in self.cal.to_dict()["Compound"].values()} #initialize set of compounds from calibration
+
+    def generate_bypass_areas(self,bypass,extract=True):
+        
+        if extract:
+            peaks = self.collect_cal_peaks()
+          
+            for detector_name,detector in bypass["detectors"].items(): #Pull all labelled peaks from calibration
+                for peak in detector["analysis"]["peaks"]:
+                    label = peak.get("label")
+                    if label in peaks.keys(): #make sure label is in calibration
+                        if label in self.reactants:
+                            peaks[label]["bypass_area"] = peak["area"]
+                    elif label is not None: #if there is a labelled peak not in the calibration, raise an error!
+                        raise ValueError("Peak found in gc with label {}. This label does not exist in cal".format(label))
+                    else:
+                        continue
+
+        else:
+            return bypass
+
+
+
+
+    def analyze_run_offline(self,run_json,bypass,avgd_bp=False):
 
         results = {} # this will be the reported results of the run. No need for ordered dict since Py3.7+ guarantees insertion order.
-        peaks = {i:{"area" : 0,"detector":None} for i in self.cal.to_dict()["Compound"].values()} #initialize set of compounds from calibration
+        peaks = self.collect_cal_peaks()
 
-
+        if avgd_bp:
+            peaks = self.generate_bypass_areas(bypass,extract=False)
+        else:
+            peaks = self.generate_bypass_areas(bypass,extract=True)
 
 
 
@@ -118,25 +169,17 @@ class Instrument():
         for detector_name,detector in run_json["detectors"].items(): #Pull all labelled peaks from calibration
             for peak in detector["analysis"]["peaks"]:
                 label = peak.get("label")
-                peak["detector"] = detector_name
                 if label in peaks.keys(): #make sure label is in calibration
-                    peaks[label] = peak
+                    peaks[label]["detector"] = detector_name
+                    for key,val in peak.items():
+                        peaks[label][key] = val
                 elif label is not None: #if there is a labelled peak not in the calibration, raise an error!
                     raise ValueError("Peak found in gc with label {}. This label does not exist in cal".format(label))
                 else:
                     continue
 
         #--------------------------Pull in areas from bypass--------------------------#
-        for detector_name,detector in bypass["detectors"].items(): #Pull all labelled peaks from calibration
-            for peak in detector["analysis"]["peaks"]:
-                label = peak.get("label")
-                if label in peaks.keys(): #make sure label is in calibration
-                    if label in self.reactants:
-                        peaks[label]["bypass_area"] = peak["area"]
-                elif label is not None: #if there is a labelled peak not in the calibration, raise an error!
-                    raise ValueError("Peak found in gc with label {}. This label does not exist in cal".format(label))
-                else:
-                    continue
+        peaks = self.generate_bypass_areas(bypass,peaks=peaks)
 
         #--------------------------Acquire Flows if Desired----------------------------#
         if "Total Flow" not in run_json:
@@ -206,8 +249,8 @@ class Instrument():
         C_product_pct = sum([results["Mol % Out"][compound] * self.carbon_number[compound] * validation_parameters["Diluent Factor"] for compound in self.products]) # All C products
 
         #conversion
-        results["Product Conversion"] = {self.major_reactant : C_product_pct / (results["Mol % In"][self.major_reactant]*self.carbon_number[compound])}
-        results["Reactant Conversion"] = {compound : (results["Mol % In"][compound]-results["Mol % Out"][compound] * validation_parameters["Diluent Factor"]) / results["Mol % In"][compound] for compound in self.conversion}
+        results["Product Conversion %"] = {self.major_reactant : 100*C_product_pct / (results["Mol % In"][self.major_reactant]*self.carbon_number[self.major_reactant])}
+        results["Reactant Conversion %"] = {compound : 100*(results["Mol % In"][compound]-results["Mol % Out"][compound] * validation_parameters["Diluent Factor"]) / results["Mol % In"][compound] for compound in self.conversion}
 
         #selectivity
         results["Selectivity"] = {group : {} for group in self.selectivity}
@@ -215,7 +258,7 @@ class Instrument():
             selectivity = 0 
             for compound in self.selectivity[group]:
                 selectivity += results["Mol % Out"][compound] * self.carbon_number[compound] * validation_parameters["Diluent Factor"] / C_product_pct #Carbon selectivity
-            results["Selectivity"][group] = selectivity
+            results["Selectivity"][group] = 100*selectivity
 
         if self.flows_exist:
             results["Instantaneous Rate (kg/kg-cat/hr)"] =  {group : {} for group in self.instantaneous_rate}
@@ -229,11 +272,17 @@ class Instrument():
                     
                 results["Instantaneous Rate (kg/kg-cat/hr)"][group] =  rate_mass
                 results["Instantaneous Rate (kg/L/hr)"][group] = rate_vol
+
             results["Contact Time"] = {"WHSV (h^-1)" : None, "GHSV (h^-1)" : None}
             results["Contact Time"]["WHSV (h^-1)"] = results["Flow In (mol/s/g)"][self.major_reactant] * self.molecular_weight[self.major_reactant] * 3600 #3600 is s --> hr
             results["Contact Time"]["GHSV (h^-1)"] = results["Flow In (mol/s/mL)"][self.major_reactant] / self.mL_per_min_to_mol_per_s * 60 #60 is min --> hr
         
-        return (results, peaks)
+        #carbon balance
+        C_in = sum([results["Mol % In"][reactant]/100 * self.carbon_number[reactant] for reactant in self.reactants if reactant in self.carbon_number.keys()]) #add all C-containing reactants
+        C_out = sum([results["Mol % Out"][product]/100 * self.carbon_number[product] * validation_parameters["Diluent Factor"] for product in results["Mol % Out"].keys() if product in self.carbon_number.keys()]) #add all C-containing products
+        validation_parameters["Carbon Balance %"] = (C_in - C_out) * 100 / C_in
+
+        return (results, peaks,validation_parameters)
 
 
 

@@ -61,36 +61,41 @@ class Instrument():
 			print("Unexpected error: ",sys.exc_info()[0])
 			raise
 
-	def get_sub_dev_names(self):
-		return {bh.name : self.name for bh in self.Controllers}
+	def get_sub_dev_names(self): #the controllers will be named by gas
+		return {bh.gas : self.name for bh in self.Controllers}
 
 	def read_PV(self):
 		curr_flows = {}
+		total_PV = 0
 		for bh in self.Controllers:
-			curr_flows[bh.name + " PV"] = bh.read_flow()
-			if curr_flows[bh.name + " PV"] == -99: #read_flow() method returns -99 if there is failure to read flow 10x
+			curr_flows[bh.gas + " PV"] = bh.read_flow()
+			total_PV += curr_flows[bh.gas + " PV"]
+			if curr_flows[bh.gas + " PV"] == -99: #read_flow() method returns -99 if there is failure to read flow 10x
 				raise IOError("Flow reading failed at the level of the Bronkhorst class. Comms issue.") 
+		curr_flows["Total Flow PV"] = total_PV
 		return curr_flows
 
 	def read_SP(self):
 		curr_setpts = {}
+		total_SP = 0
 		for bh in self.Controllers:
-			curr_setpts[bh.name + " SP"] = bh.read_setpoint()
-
+			curr_setpts[bh.gas + " SP"] = bh.read_setpoint()
+			total_SP += curr_setpts[bh.gas + " SP"]
+		curr_setpts["Total Flow SP"] = total_SP
 		return curr_setpts
 
 	def write_SP(self,flow_dict,emergency=False):
 		for bh in self.Controllers:
-			if flow_dict.get(bh.name) is not None: #if controller flow change is dictated in flow_dict
-				bh.set_flow(flow_dict[bh.name])
+			if flow_dict.get(bh.gas) is not None: #if controller flow change is dictated in flow_dict
+				bh.set_flow(flow_dict[bh.gas])
 
 		if not emergency:
 			time.sleep(20)
 			for bh in self.Controllers:
-				if flow_dict.get(bh.name) is not None:
+				if flow_dict.get(bh.gas) is not None:
 					act_flow = bh.read_flow()
-					exp_flow_low = flow_dict[bh.name] - self.flow_dev_lim
-					exp_flow_high = flow_dict[bh.name] + self.flow_dev_lim
+					exp_flow_low = flow_dict[bh.gas] - self.flow_dev_lim
+					exp_flow_high = flow_dict[bh.gas] + self.flow_dev_lim
 					#Not within acceptable region
 					if ((act_flow < exp_flow_low) or (act_flow > exp_flow_high)):
 						print("Setpoints failed to set. Setting emergency flows.")

@@ -5,6 +5,9 @@ import time
 import json
 import importlib
 import datetime
+import pandas as pd
+from datetime import timezone
+from tkinter.filedialog import asksaveasfilename
 
 """
 Usage
@@ -50,6 +53,10 @@ class AuxComms():
 			else:
 				print("Not using {}.".format(dev_type))
 
+	def initialize_gc(self):
+		gc = importlib.import_module(self.main_config["GC Module"])
+		self.gc = gc.Instrument(self.main_config["GC Config File"])
+
 	def initialize_logging(self):
 
 
@@ -79,7 +86,7 @@ class AuxComms():
 		#--------------------Appending to logfile with time and each SP and PV value--------------------#
 		with open(self.logfile, 'a', newline='') as csvfile:
 			writer = csv.DictWriter(csvfile,fieldnames=self.header)
-			logrow = {"Time" : datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+			logrow = {"Time" : datetime.datetime.now(tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}
 			for dev in self.aux_devices.values():
 				for sub_dev_name, sub_dev_val in dev.read_SP().items():
 					logrow[sub_dev_name] = sub_dev_val
@@ -99,32 +106,12 @@ class AuxComms():
 			if df.equals(self.prev_online_setpt_chg):
 				return
 			else:		
-				self.prev_online_setpt_chg = df #Record the df so that we don't continually try to open one that we just opened.
+				self.prev_online_setpt_chg = df #Record the df so that we don't continually try to use one that still has an error.
 
 				if df.shape[0] != 1:
 					raise IndexError("Online Setpt Change File has {} rows of data and should only have 1".format(df.shape[0]))
-				for dev_name in self.aux_devices.keys(): #for each device we're communicating with
-
-					new_sp_dict = {}
-					sub_devices = self.aux_devices[dev_name].get_sub_dev_names().keys() #get its subdevices
-					for dev_with_new_sp in df.columns: #for each device listed in setpt change file:
-
-						if dev_with_new_sp not in self.sub_dev_map.keys():
-
-							raise KeyError(dev_with_new_sp)
-						if dev_with_new_sp in sub_devices: #if it is part of the overall device we've iterated to:
-							if df.iloc[0][dev_with_new_sp] > (1.01*self.prev_log_row[dev_with_new_sp+" SP"]) or df.iloc[0][dev_with_new_sp] < (0.99*self.prev_log_row[dev_with_new_sp+ " SP"]): #if we differ from curr sp by more than 1%:
-								new_val = float(df.iloc[0][dev_with_new_sp])
-								new_sp_dict[dev_with_new_sp] = new_val
-
-					if new_sp_dict != {}:#if we made any changes to setpts:
-						for sub_dev, new_val in new_sp_dict.items():
-							print("Changing setpt for: {} to {}...".format(sub_dev,new_val))
-
-						if self.aux_devices[dev_name].write_SP(new_sp_dict): #if write_SP returns True
-							print("Setpoints took successfully")
-
-			self.log(print_row=True)
+				self.make_setpt_change(df.iloc[0,:])
+				self.log(print_row=True)
 		except IndexError as e:
 			print(e)
 			pass
@@ -138,6 +125,31 @@ class AuxComms():
 
 		except PermissionError:
 			print("Collision btwn file save and pandas read. Will change SP on next iteration.")
+	def make_setpt_change(self,next_setpts): #takes in a Pandas Series
+
+				for dev_name in self.aux_devices.keys(): #for each device we're communicating with
+
+					new_sp_dict = {}
+					sub_devices = self.aux_devices[dev_name].get_sub_dev_names().keys() #get its subdevices
+					for dev_with_new_sp in next_setpts.index: #for each device listed in setpt change file:
+
+						if dev_with_new_sp not in self.sub_dev_map.keys():
+
+							raise KeyError(dev_with_new_sp)
+						if dev_with_new_sp in sub_devices: #if it is part of the overall device we've iterated to:
+							if next_setpts[dev_with_new_sp] > (1.01*self.prev_log_row[dev_with_new_sp+" SP"]) or next_setpts[dev_with_new_sp] < (0.99*self.prev_log_row[dev_with_new_sp+ " SP"]): #if we differ from curr sp by more than 1%:
+								new_val = float(next_setpts[dev_with_new_sp])
+								new_sp_dict[dev_with_new_sp] = new_val
+
+					if new_sp_dict != {}:#if we made any changes to setpts:
+						for sub_dev, new_val in new_sp_dict.items():
+							print("Changing setpt for: {} to {}...".format(sub_dev,new_val))
+
+						if self.aux_devices[dev_name].write_SP(new_sp_dict): #if write_SP returns True
+							print("Setpoints took successfully")
+
+
+
 
 		
 #If run as standalone file
@@ -148,7 +160,7 @@ if __name__ == '__main__':
 	print("\n")
 	aux_comms = AuxComms()
 
-	#--------------------------Verify log file location and online setpt change file location is correct------------------------------#
+	#--------------------------Verify log file location is correct------------------------------#
 	while not proceed:
 		answer = input("\nProgram will overwrite any log file stored at {}. Acknowledge log file location is correct (y/n): ".format(aux_comms.logfile))
 		if answer == 'y':
@@ -157,27 +169,47 @@ if __name__ == '__main__':
 			raise ValueError("Log file location acknowledged as incorrect. Please fix and restart!")
 		else:
 			continue
-
-	proceed = False
-	while not proceed:
-		answer = input("\nProgram will overwrite any file stored at {}. Acknowledge online setpt change file location is correct (y/n): ".format(aux_comms.main_config["Online Setpt Change File"]))
-		if answer == 'y':
-			proceed=True 
-		elif answer == 'n':
-			raise ValueError("Online setpt change file location acknowledged as incorrect. Please fix and restart!")
-		else:
-			continue
-
-	if len(sys.argv) > 1:
-		raise NotImplementedError("Setpoint Control from File not implemented yet")
-		aux_comms.setpt_file_exists = True
-
-	else:
+		
+	#-------------------------If using online setpts--------------------------------#
+	if len(sys.argv) == 1:
+		proceed = False
+		while not proceed:
+			answer = input("\nProgram will overwrite any file stored at {}. Acknowledge online setpt change file location is correct (y/n): ".format(aux_comms.main_config["Online Setpt Change File"]))
+			if answer == 'y':
+				proceed=True 
+			elif answer == 'n':
+				raise ValueError("Online setpt change file location acknowledged as incorrect. Please fix and restart!")
+			else:
+				continue
 		with open(aux_comms.main_config["Online Setpt Change File"],'w') as f: #clear file
 			pass
-
 		print("To manually change the setpoint, modify the file at {} with the exact setpoints you want for each device.".format(aux_comms.main_config["Online Setpt Change File"]))
 
+	#-------------------------If using offline setpts--------------------------------#
+	else:
+
+		
+		#make sure each named subdevice is something we currently control and all columns of file have correct names for subdevices
+		setpts = pd.read_csv(sys.argv[1])
+		for i,sub_dev in enumerate(setpts.columns): 
+			if sub_dev not in aux_comms.sub_dev_map.keys():
+				if sub_dev != "Num_Datapts" and sub_dev != "Total Flow":
+					raise ValueError("Subdevice {} found in file {} but not in subdevice map {}".format(sub_dev,sys.argv[1],aux_comms.sub_dev_map))
+		aux_comms.setpt_file_exists = True
+		
+		#initialize run log file
+		run_log_fname = asksaveasfilename(filetypes=[("CSV file","*.csv")])
+		headers = list(setpts.columns)
+		headers.append("runTimeStamp")
+		headers.append("runID")
+		pd.DataFrame(columns=headers).to_csv(run_log_fname,header=True) #save header to file as a check that it exists!
+
+
+		#initialize GC and GC params
+		aux_comms.initialize_gc()
+		aux_comms.gc.check_for_new_run() #burn one check so that we now have the current runID stored for future checks
+		num_datapts_remaining = 0 #num GC datapts at our current setpts
+		next_setpt_row = 0
 
 
 
@@ -185,18 +217,52 @@ if __name__ == '__main__':
 
 	prev_time = time.time()
 	while True:
-		if (time.time() - prev_time) > aux_comms.log_poll_time:
+		if (time.time() - prev_time) > aux_comms.log_poll_time: #logging
 			prev_time = time.time()
 			aux_comms.log(print_row=True)
-		
-		if not aux_comms.setpt_file_exists: #if we allow online setpt changes
-			if aux_comms.online_setpt_change():
+			time.sleep(1)
+
+
+		if aux_comms.setpt_file_exists: #if offline setpt changes:
+			if T_timer_active:
+				t_delta = time.time() - T_time_init
+				if t_delta > 20:
+					T_timer_active = False
+				else:
+					print("Waiting for Temp stabilization. Time since Temp change: {} seconds. ".format(t_delta))
+			else:
+				if aux_comms.gc.check_for_new_run(): #whenever there's a new run, write to run log
+					num_datapts_remaining -= 1
+					timestamp = aux_comms.gc.get_last_run_timestamp()
+					time.sleep(1)
+					runID = aux_comms.gc.get_last_run_ID()
+					run_data = pd.Series({"runTimeStamp" : timestamp, "runID" : runID})
+					log_row = next_setpts.append(run_data)
+					pd.DataFrame(log_row).transpose().to_csv(run_log_file, mode='a', header=False)
+
+
+				if num_datapts_remaining <= 0: #if we have no more required GC datapts at this set of conditions
+					if next_setpt_row >= setpts.shape[0] #if we've reached the end of our setpts:
+						pass #done with setpt changes, just log
+					else:
+						curr_T_setpt = next_setpts["T"]
+						next_setpts = df.iloc[next_setpt_row,:]
+						num_datapts_remaining = next_setpts["Num_Datapts"]
+						total_flow = next_setpts["Total Flow"]
+						sub_dev_setpts = next_setpts.drop(["Num_Datapts", "Total Flow"]) 
+						aux_comms.make_setpt_change(sub_dev_setpts)
+						if next_setpts["T"] != curr_T_setpt: #Temperature stabilization time
+							T_timer_active = True
+							T_time_init = time.time()
+						next_setpt_row += 1
+
+		else: #if online setpt changes
+			if aux_comms.online_setpt_change(): #checks for and makes online_setpt_changes
 				time.sleep(5)
 			else:
 				time.sleep(1)
 		
-		else:
-			time.sleep(1)
+
 
 
 
