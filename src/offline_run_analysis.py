@@ -47,41 +47,35 @@ class Analyzer():
 			os.mkdir(self.path_to_store_data)
 		
 
-	def analyze(self,run_json,bp_json,logfile):
-		"""This method takes in a singular GC run JSON and figures out what flowrate and temperature the run occurred at, based on the logfile timestamps.
-		It then passes the run_json, with Temp and Flowrate, into the analyzer to produce conversion, selectivity, etc."""
-		
-		#-----------------Finding Flow and Temperature conditions from logfile------------------#
-		# GC_time = pd.to_datetime(pd.Series(dateutil.parser.parse(str(run_json['runTimeStamp'])))) #UTC time from GC run
-		# logdf = pd.read_csv(logfile)
-		# logdf["Time"] = pd.to_datetime(logdf["Time"], format="%Y-%m-%d %H:%M:%S")
-		# prev_time = None
-		# for i,logtime in enumerate(logdf["Time"]):
-		# 	if logtime > GC_time: #if the logfile now supercedes the GC run time
-		# 		if prev_time is None:
-		# 			raise ValueError("All log times greater than GC time- cannot determine run conditions.\nGC time: {} Logtime: {}".format(GC_time,logtime))
-		# 		else:
-		# 			break #prev_time now represents the flow conditions for our GC run
-		# 	else:
-		# 		prev_time = logtime #we're still iterating through logtimes before the GC_time. increment our timestep in the logfile
+	def analyze_multiple_runs(self,run_dataset,bp_dataset,run_log_fname):
+		run_files = self.gc.prep_dataset(run_dataset,self.path_to_store_data+"/run_files")
+		bp_json = self.generate_bypass(bp_dataset)
+		df = None
+		for file in run_files:
+			with open(file,'r') as f:
+				run_json = json.load(f)
+				run_json = self.add_conditions(run_json,run_log_fname) #adds temperature, flow, etc. to run_json
+				res, peaks, val_params = self.gc.analyze_run_offline(run_json,bp_json)
+				res_df = pd.json_normalize(res,sep="_") #flatten the results dictionary for printing
+				val_params_df = pd.json_normalize(val_params,sep="_")
+				combined_df = pd.concat([res_df,val_df],axis=1) #add C balance, etc. to results
 
-		# if self.flow_config is not None:
-		# 	run_json["Total Flow"] = logdf.loc[logdf["Time"]==prev_time]["Total Flow SP"]
-		# if self.temp_config is not None:
-		# 	run_json["Temperature"] = logdf.loc[logdf["Time"]==prev_time][self.temp_name + " SP"]
+				if df is None:
+					df = combined_df
+				else:
+					df.append(combined_df)
 
-		return gc.analyze_run_offline(run_json,bp_json)
+		return df
 
-	def generate_bypass(self,bp_dataset,run_log_fname):
+	def generate_bypass(self,bp_dataset):
 		"""This function averages multiple bypass runs to generate an average bp run"""
 
-		bp_files = self.gc.prep_dataset(bp_dataset,self.path_to_store_data) #returns a list of string filenames from dataset
-		bypass = self.gc.generate_bypass_areas(bp_files[0])
-
-		for data_fname in bp_files):
+		bp_files = self.gc.prep_dataset(bp_dataset,self.path_to_store_data+"/bp_files") #returns a list of string filenames from dataset
+		bypass = self.gc.collect_cal_peaks() #produce a starting dictionary of all peaks we're looking for
+		for data_fname in bp_files:
 			with open(data_fname,'r') as f:
 				bp_json = json.load(f)
-				peaks = 
+				peaks = self.gc.generate_bypass_areas(bp_json,extract=True) #extract the peak areas from the complicated GC file structure
 				for compound, area_dict in peaks.items():
 					if compound in bypass.keys():
 						bypass[compound]["bypass_area"] += area_dict["bypass_area"]
@@ -95,6 +89,11 @@ class Analyzer():
 
 		return bypass
 
+	def analyze(self,run_json,bypass_fname,run_log_fname):
+		analyses = []
+		run_json = self.add_conditions(run_fname,run_log_fname)
+		return self.gc.analyze_run_offline(run_json)
+
 	def add_conditions(self,run_fname,run_log_fname): #adds all conditions from run log entry to a JSON file
 		with open(run_fname,'r') as f:
 			filedata = json.load(f)
@@ -107,6 +106,7 @@ class Analyzer():
 						filedata[idx] = run_log_entry[idx]
 		return filedata
 
+	def calculate_rate_data
 
 
 

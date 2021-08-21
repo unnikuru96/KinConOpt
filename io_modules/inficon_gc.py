@@ -145,6 +145,7 @@ class Instrument():
                         raise ValueError("Peak found in gc with label {}. This label does not exist in cal".format(label))
                     else:
                         continue
+            return peaks
 
         else:
             return bypass
@@ -155,14 +156,13 @@ class Instrument():
     def analyze_run_offline(self,run_json,bypass,avgd_bp=False):
 
         results = {} # this will be the reported results of the run. No need for ordered dict since Py3.7+ guarantees insertion order.
-        peaks = self.collect_cal_peaks()
 
+
+        #--------------------------Pull in areas from bypass--------------------------#
         if avgd_bp:
             peaks = self.generate_bypass_areas(bypass,extract=False)
         else:
             peaks = self.generate_bypass_areas(bypass,extract=True)
-
-
 
 
         #------------------------Pull in data from run_json------------------#
@@ -178,8 +178,7 @@ class Instrument():
                 else:
                     continue
 
-        #--------------------------Pull in areas from bypass--------------------------#
-        peaks = self.generate_bypass_areas(bypass,peaks=peaks)
+
 
         #--------------------------Acquire Flows if Desired----------------------------#
         if "Total Flow" not in run_json:
