@@ -49,16 +49,19 @@ class Analyzer():
 
 	def analyze_multiple_runs(self,run_dataset,bp_dataset,run_log_fname):
 		run_files = self.gc.prep_dataset(run_dataset,self.path_to_store_data+"/run_files")
-		bp_json = self.generate_bypass(bp_dataset)
+		if ".zip" in bp_dataset: #generate bypass unless it's already generated
+			bp_json = self.generate_bypass(bp_dataset)
+		else:
+			bp_json = bp_dataset
 		df = None
 		for file in run_files:
 			with open(file,'r') as f:
 				run_json = json.load(f)
 				run_json = self.add_conditions(run_json,run_log_fname) #adds temperature, flow, etc. to run_json
 				res, peaks, val_params = self.gc.analyze_run_offline(run_json,bp_json)
-				res_df = pd.json_normalize(res,sep="_") #flatten the results dictionary for printing
+				res_df = pd.json_normalize(res,sep="_") #flatten the results dictionary to form a dataframe
 				val_params_df = pd.json_normalize(val_params,sep="_")
-				combined_df = pd.concat([res_df,val_df],axis=1) #add C balance, etc. to results
+				combined_df = pd.concat([res_df,val_params_df],axis=1) #add C balance, etc. to results
 
 				if df is None:
 					df = combined_df
@@ -106,7 +109,7 @@ class Analyzer():
 						filedata[idx] = run_log_entry[idx]
 		return filedata
 
-	def calculate_rate_data
+	
 
 
 

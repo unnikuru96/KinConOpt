@@ -178,8 +178,19 @@ class Instrument():
                 else:
                     continue
 
+        #add ID Info
 
-
+        results["ID Info"] = {}
+        results["ID Info"]["runID"] = run_json["runID"]
+        results["ID Info"]["runTimeStamp"] = run_json["runTimeStamp"]
+        if "T" in run_json.keys():
+            results["ID Info"]["Temperature"] = run_json["T"] 
+        elif "Temperature" in run_json.keys():
+            results["ID Info"]["Temperature"] = run_json["Temperature"] 
+        elif "Temp" in run_json.keys():
+            results["ID Info"]["Temperature"] = run_json["Temp"]
+        else:
+            pass
         #--------------------------Acquire Flows if Desired----------------------------#
         if "Total Flow" not in run_json:
             val = -1
@@ -195,8 +206,7 @@ class Instrument():
                             correct = input("You entered a flow of {}. Enter 1 to confirm or anything else to re-enter flow rate: ".format(total_flow))
                             print("Received: {}".format(correct))
                             if correct == "1":
-                                results["Flows"] = {}
-                                results["Flows"]["Total"] = total_flow
+                                results["ID Info"]["Total Flow"] = total_flow
                                 finished = True
                                 self.flows_exist = True
                             else:
@@ -209,14 +219,15 @@ class Instrument():
                     self.flows_exist = False
 
         else: #flows are in run_json already (run_json provided by another program)
-            results["Flows"] = {}
-            results["Flows"]["Total"] = run_json["Total Flow"]
+
+            results["ID Info"]["Total Flow"] = run_json["Total Flow"]
             self.flows_exist = True
+
 
 
         #--------------------Construct Results Dictionary-------------------#
         
-        all_compounds = []
+        all_compounds = [] #build out a list of all compounds
         for compound in self.reactants:
             if compound not in all_compounds:
                 all_compounds.append(compound)
